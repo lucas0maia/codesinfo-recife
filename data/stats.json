@@ -1,0 +1,31 @@
+{
+  "total": 128,
+  "open_or_rolling": 21,
+  "transversal_count": 102,
+  "journalism_direct_count": 26,
+  "by_status": {
+    "aberto": 14,
+    "encerrado": 70,
+    "fluxo_continuo": 7,
+    "verificar_prazo": 37
+  },
+  "by_area": {
+    "Socioambiental e Clima": 38,
+    "Direitos Humanos e Justiça": 30,
+    "Jornalismo Direto": 26,
+    "Educação e Ciência": 15,
+    "Comunicação Comunitária e Mobilização": 8,
+    "Cultura e Memória": 7,
+    "Transversal / Impacto Social": 3,
+    "Tecnologia e Direitos Digitais": 1
+  },
+  "by_source": {
+    "GIFE (Rede de Editais)": 52,
+    "ABCR (Captadores)": 30,
+    "Latam Journalism Review": 15,
+    "Fundo Brasil de Direitos Humanos": 12,
+    "Pulitzer Center": 10,
+    "Fundo Casa Socioambiental": 8,
+    "IJNet (Rede de Jornalistas Internacionais)": 1
+  }
+}

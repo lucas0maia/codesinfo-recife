@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radar de Editais — Jornalismo Independente (PoC Módulo 1)</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div>
+        <span class="badge-pill">PoC Módulo 1 · Coleta 100% Programática (sem IA)</span>
+        <h1>Radar de Editais para Jornalismo Independente</h1>
+        <p class="subtitle">Mapeamento automático de editais jornalísticos e transversais (cultura, clima, educação, direitos humanos e mobilização).</p>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-collect" class="btn-primary" type="button">Atualizar Coleta Agora</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="kpi-grid" aria-label="Indicadores">
+      <article class="kpi-card">
+        <span class="kpi-label">Editais Mapeados</span>
+        <strong id="kpi-total" class="kpi-value">—</strong>
+      </article>
+      <article class="kpi-card kpi-open">
+        <span class="kpi-label">Abertos / Fluxo Contínuo</span>
+        <strong id="kpi-open" class="kpi-value">—</strong>
+      </article>
+      <article class="kpi-card">
+        <span class="kpi-label">Jornalismo Direto</span>
+        <strong id="kpi-direct" class="kpi-value">—</strong>
+      </article>
+      <article class="kpi-card">
+        <span class="kpi-label">Editais Transversais</span>
+        <strong id="kpi-transversal" class="kpi-value">—</strong>
+      </article>
+    </section>
+
+    <section class="filters-bar" aria-label="Filtros">
+      <div class="filter-group filter-search">
+        <label for="filter-q">Buscar</label>
+        <input id="filter-q" type="search" placeholder="Título, realizador, tema..." />
+      </div>
+      <div class="filter-group">
+        <label for="filter-status">Status</label>
+        <select id="filter-status">
+          <option value="">Todos (exceto encerrados)</option>
+          <option value="aberto">Aberto</option>
+          <option value="fluxo_continuo">Fluxo contínuo</option>
+          <option value="verificar_prazo">Verificar prazo</option>
+          <option value="encerrado">Encerrado</option>
+          <option value="__all__">Incluir encerrados</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-area">Área</label>
+        <select id="filter-area">
+          <option value="">Todas as áreas</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-source">Fonte</label>
+        <select id="filter-source">
+          <option value="">Todas as fontes</option>
+        </select>
+      </div>
+    </section>
+
+    <div id="collect-banner" class="collect-banner hidden" role="status"></div>
+
+    <section class="table-card">
+      <div class="table-header">
+        <h2>Editais Encontrados (<span id="list-count">0</span>)</h2>
+        <span class="hint">Clique em um edital para ver elegibilidade e formatos de projeto recomendados</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Edital / Realizador</th>
+              <th>Área</th>
+              <th>Status</th>
+              <th>Prazo</th>
+              <th>Valor</th>
+              <th>Fit</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="editais-tbody">
+            <tr><td colspan="7" class="empty">Carregando editais...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="methodology-card" aria-label="Metodologia e Funcionamento da Coleta">
+      <div class="methodology-header">
+        <h2>Metodologia e Como Funciona o Script de Coleta</h2>
+        <span class="badge-outline">100% Programático · Sem uso de IA</span>
+      </div>
+      <p class="methodology-intro">
+        Para localizar editais jornalísticos e transversais que costumam estar dispersos em dezenas de portais,
+        o backend executa um pipeline determinístico em Python em quatro etapas:
+      </p>
+      <div class="methodology-grid">
+        <article class="method-step">
+          <span class="step-num">1</span>
+          <h3>Conectores Multi-Camadas</h3>
+          <p>
+            Coleta paralela via <strong>APIs REST WordPress</strong> (<code>/wp-json/wp/v2/</code> de ABCR, GIFE, Fundo Brasil, Fundo Casa, Agência Pública e Latam Journalism Review),
+            <strong>Feed RSS</strong> (IJNet PT-BR) e <strong>scraping HTML estruturado</strong> (Pulitzer Center).
+          </p>
+        </article>
+        <article class="method-step">
+          <span class="step-num">2</span>
+          <h3>Desmembramento e Link Direto</h3>
+          <p>
+            Boletins que reúnem várias chamadas em um único post (como GIFE e LJR) são divididos automaticamente em <strong>editais individuais</strong>.
+            O parser extrai o link oficial do edital/formulário no corpo do texto e resolve encurtadores (<code>bit.ly</code>, <code>e2ma.net</code>).
+          </p>
+        </article>
+        <article class="method-step">
+          <span class="step-num">3</span>
+          <h3>Análise Determinística (Regex + Regras)</h3>
+          <p>
+            Sem chamadas de LLM: o analisador descarta notícias de resultado e guias, extrai prazos (<code>DD/MM/AAAA</code>, extenso em PT/EN e fluxo contínuo),
+            valores (<code>R$</code>, <code>US$</code>, <code>€</code>), realizador e perfis elegíveis (OSC, veículos, jornalistas, coletivos, PJ/MEI).
+          </p>
+        </article>
+        <article class="method-step">
+          <span class="step-num">4</span>
+          <h3>Classificação, Fit e Persistência</h3>
+          <p>
+            Um dicionário ponderado classifica o edital entre <em>Jornalismo Direto</em> e eixos transversais (Cultura, Clima, Educação, Direitos Humanos, Mobilização),
+            calcula o score de aderência (Fit) e grava tudo em <strong>SQLite</strong> com deduplicação por hash da URL.
+          </p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <span id="modal-badge" class="status-tag"></span>
+          <h3 id="modal-title"></h3>
+          <p id="modal-organizer" class="modal-meta"></p>
+        </div>
+        <button id="modal-close" class="btn-icon" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-grid">
+          <div>
+            <span class="detail-label">Prazo</span>
+            <strong id="modal-deadline"></strong>
+          </div>
+          <div>
+            <span class="detail-label">Valor / Apoio</span>
+            <strong id="modal-value"></strong>
+          </div>
+          <div>
+            <span class="detail-label">Fonte</span>
+            <strong id="modal-source"></strong>
+          </div>
+          <div>
+            <span class="detail-label">Tipo</span>
+            <strong id="modal-type"></strong>
+          </div>
+        </div>
+
+        <div class="detail-block">
+          <h4>Elegibilidade detectada</h4>
+          <ul id="modal-eligibility" class="pill-list"></ul>
+        </div>
+
+        <div class="detail-block highlight-box">
+          <h4>O que um veículo jornalístico pode submeter neste edital</h4>
+          <ul id="modal-tips" class="tips-list"></ul>
+        </div>
+
+        <div class="detail-block">
+          <h4>Resumo extraído</h4>
+          <p id="modal-summary" class="summary-text"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a id="modal-source-link" class="btn-small hidden" href="#" target="_blank" rel="noopener noreferrer">Matéria de origem</a>
+        <a id="modal-link" class="btn-primary" href="#" target="_blank" rel="noopener noreferrer">Abrir Edital Direto &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
+

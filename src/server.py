@@ -1,0 +1,95 @@
+"""HTTP server exposing the programmatic editais API and web dashboard."""
+
+import json
+import mimetypes
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from typing import Optional
+from urllib.parse import parse_qs, urlparse
+
+from .pipeline import run_collection
+from .storage import EditalStorage
+
+
+def create_handler(storage: EditalStorage, web_dir: Path):
+    """Build HTTP request handler bound to storage and static web directory."""
+
+    class EditaisHandler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args) -> None:  # noqa: A002
+            return
+
+        def _send_json(self, payload: object, status: int = 200) -> None:
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _serve_static(self, rel_path: str) -> None:
+            safe_rel = rel_path.lstrip("/") or "index.html"
+            target = (web_dir / safe_rel).resolve()
+            if not str(target).startswith(str(web_dir.resolve())) or not target.is_file():
+                self.send_error(404, "Not found")
+                return
+            mime, _ = mimetypes.guess_type(str(target))
+            data = target.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", f"{mime or 'application/octet-stream'}; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def do_GET(self) -> None:  # noqa: N802
+            parsed = urlparse(self.path)
+            if parsed.path == "/api/editais":
+                qs = parse_qs(parsed.query)
+                status = qs.get("status", [None])[0] or None
+                area = qs.get("area", [None])[0] or None
+                source_id = qs.get("source", [None])[0] or None
+                q = qs.get("q", [None])[0] or None
+                exclude_closed = qs.get("exclude_closed", ["0"])[0] == "1"
+                items = storage.list_editais(
+                    status=status,
+                    area=area,
+                    source_id=source_id,
+                    q=q,
+                    exclude_closed=exclude_closed,
+                )
+                self._send_json({"count": len(items), "items": items})
+                return
+
+            if parsed.path == "/api/stats":
+                self._send_json(storage.get_stats())
+                return
+
+            self._serve_static(parsed.path)
+
+        def do_POST(self) -> None:  # noqa: N802
+            parsed = urlparse(self.path)
+            if parsed.path == "/api/collect":
+                report = run_collection(storage)
+                self._send_json({"ok": True, "report": report})
+                return
+            self.send_error(404, "Not found")
+
+    return EditaisHandler
+
+
+def serve_app(
+    storage: EditalStorage,
+    web_dir: Path,
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    open_browser: Optional[bool] = False,
+) -> None:
+    """Start the HTTP server."""
+    handler = create_handler(storage, web_dir)
+    server = ThreadingHTTPServer((host, port), handler)
+    print(f"Editais Dashboard running at http://{host}:{port}")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
